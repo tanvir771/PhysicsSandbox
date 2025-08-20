@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -32,12 +33,16 @@ float lastFrame = 0.0f;
 float lastX = 400, lastY = 300;
 float pitch = 0.0f, yaw = -90.0f;
 bool firstMouse = true;
+bool leftWasDown = false;
 
 // physics constants
 float velocity = 0.0f;
 float gravity = -9.8f;
 float limit = 5.0f; // half-size of world
 float drag = 0.98f;
+
+// objects
+std::vector<Cube*> objs; // keeps track of all the objects present
 
 void processInput(GLFWwindow* window);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -97,6 +102,8 @@ int main() {
 
 	Cube cubeA(glm::vec3(0.5f, 0.5f, 0.5f));
 	Cube cubeB(glm::vec3(0.5f, 0.5f, 10.0f));
+	objs.push_back(&cubeA);
+	objs.push_back(&cubeB);
 
 	while (!glfwWindowShouldClose(window)) {
 		// delta calculations
@@ -123,8 +130,6 @@ int main() {
 
 		glm::mat4 model = glm::mat4(1.0f);
 
-		if ()
-
 		cubeA.physics.update(deltaTime, gravity, drag, limit);
 		ourShader.setMat4("model", cubeA.getModelMatrix());
 		cubeA.draw();
@@ -150,10 +155,36 @@ int main() {
 	glfwTerminate();
 }
 
+auto punchObj = [&](auto& objects) {
+	if (objects.empty()) return;
+	// find the nearest object
+	size_t best = 0;
+	float bestD2 = std::numeric_limits<float>::max();
+	for (size_t i = 0; i < objects.size(); i++) {
+		const glm::vec3& p = objects[i]->physics.position;
+		float d2 = glm::length(p - cameraPos);
+		if (d2 < bestD2) { bestD2 = d2; best = i; }
+	}
+
+	glm::vec3 toObj = objects[best]->physics.position - cameraPos;
+	float len = glm::length(toObj); // uses sqrt, not good for performance
+	if (len > 1e-5f) {
+		glm::vec3 dir = toObj / len; // manually normalize as 0 isnt gaurded
+		objects[best]->physics.velocity += dir * 10.0f;
+		objects[best]->physics.velocity.y += 2.0f;
+	}
+};
+
 void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
+
+	bool leftDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+	if (leftDown == GLFW_PRESS && !leftWasDown) {
+		punchObj(objs); // global objs keeping track of all the objects present in scene
+	}
+	leftWasDown = (leftDown == GLFW_PRESS);
 
 	const float speed = deltaTime * 2.5f;
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
