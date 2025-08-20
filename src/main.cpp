@@ -6,27 +6,6 @@
 #include "Shader.h"
 #include "Cube.h"
 
-float vertices[] = {
-	-0.5f, -0.5f, 0.0f, 1.0f,0.0f,0.0f, // bottom left - 0
-	0.5f, -0.5f, 0.0f, 0.0f,1.0f,0.0f, // bottom right - 1
-	-0.5f, 0.5f, 0.0f, 0.0f,0.0f,1.0f, // top left - 2
-	0.5f, 0.5f, 0.0f,  1.0f,1.0f,0.0f, // top right - 3
-
-	-0.5f, -0.5f, -1.0, 1.0f,0.0f,1.0f, // back bottom left - 4
-	0.5f, -0.5f, -1.0,  0.0f,1.0f,1.0f, // back bottom right - 5
-	-0.5f, 0.5f, -1.0, 0.0f,0.0f,1.0f,// back top left - 6
-	0.5f, 0.5f, -1.0, 1.0f,1.0f,0.0f, // back top right - 7
-};
-
-unsigned int indices[] = {
-	0, 1, 2,   2, 3, 1, // front face
-	4, 5, 6,   6, 7, 5, // back face
-	4, 0, 2,   2, 6, 4, // left face
-	1, 5, 3,   3, 7, 5, // right face
-	2, 3, 6,   6, 3, 7, // top face
-	4, 5, 0,   0, 5, 1 // bottom face
-};
-
 float planeVertices[] = {
 	-1.0f, -1.0f, 0.0f,  1.0f, 0.5f, 0.5f,// bottom left
 	1.0f, -1.0f, 0.0f, 1.0f, 0.5f, 0.5f, // bottom right
@@ -54,15 +33,11 @@ float lastX = 400, lastY = 300;
 float pitch = 0.0f, yaw = -90.0f;
 bool firstMouse = true;
 
-// bouncing cube
-float cubeY = 3.0f;
+// physics constants
 float velocity = 0.0f;
 float gravity = -9.8f;
-
-// cube
-glm::vec3 cubePos = glm::vec3(0.0f, 5.0f, 0.0f);
-glm::vec3 cubeVel = glm::vec3(0.0f);
-bool rightWasDown = false;
+float limit = 5.0f; // half-size of world
+float drag = 0.98f;
 
 void processInput(GLFWwindow* window);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -95,29 +70,6 @@ int main() {
 	glViewport(0, 0, 800, 600);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	// get vertexarrays and buffers ready
-	unsigned int VAO, VBO, EBO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-	
-	// fill up the vertex buffers
-	// make sure to bind vao first
-	glBindVertexArray(VAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GL_FLOAT), (void*)(3 * sizeof(GL_FLOAT)));
-	glEnableVertexAttribArray(1);
-
 	// plane
 	unsigned int planeVAO, planeVBO, planeEBO;
 	glGenVertexArrays(1, &planeVAO);
@@ -143,10 +95,8 @@ int main() {
 
 	glEnable(GL_DEPTH_TEST);
 
-	float limit = 5.0f; // half-size of world
-	float drag = 0.98f;
-
 	Cube cubeA(glm::vec3(0.5f, 0.5f, 0.5f));
+	Cube cubeB(glm::vec3(0.5f, 0.5f, 10.0f));
 
 	while (!glfwWindowShouldClose(window)) {
 		// delta calculations
@@ -161,51 +111,27 @@ int main() {
 
 		ourShader.use();
 
-		// bounce cube
-		cubeVel.y += gravity * deltaTime;
-		
-		cubeVel.x *= drag;;
-		cubePos += cubeVel * deltaTime;
-
-		if (cubePos.y - 0.5f < -1.0f) {
-			cubePos.y = -1.0f + 0.5f;
-			cubeVel.y = -cubeVel.y * 0.8f;
-		}
-
-		if (cubePos.x > limit - 0.5f) { cubePos.x = limit - 0.5f; cubeVel.x = -cubeVel.x * 0.5f; }
-		if (cubePos.x < -limit + 0.5f) { cubePos.x = -limit + 0.5f; cubeVel.x = -cubeVel.x * 0.5f; }
-
-		if (cubePos.z > limit - 0.5f) { cubePos.z = limit - 0.5f; cubeVel.z = -cubeVel.z * 0.5f; }
-		if (cubePos.z < -limit + 0.5f) { cubePos.z = -limit + 0.5f; cubeVel.z = -cubeVel.z * 0.5f; }
-
-		int rightDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-		if (rightDown == GLFW_PRESS && !rightWasDown) {
-			glm::vec3 dir = glm::normalize(cubePos - cameraPos);
-			cubeVel += dir * 10.0f;             // punch away from camera
-		}
-		rightWasDown = (rightDown == GLFW_PRESS);
-
 		// projection matrix
 		glm::mat4 projection;
 		projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
 		ourShader.setMat4("projection", projection);
 
 		glm::mat4 view = glm::mat4(1.0f);
-		//view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f)); // translate the world
-		//cameraPos.y = glm::mix(cameraPos.y, cubeY, 0.1f); // Smooth interpolation
 		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp); // think of lookAt as camera; 
 													//then it should do opposite of translating the world
 		ourShader.setMat4("view", view);
 
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, cubePos);
-		ourShader.setMat4("model", model);
 
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+		if ()
 
+		cubeA.physics.update(deltaTime, gravity, drag, limit);
 		ourShader.setMat4("model", cubeA.getModelMatrix());
 		cubeA.draw();
+
+		cubeB.physics.update(deltaTime, gravity, drag, limit);
+		ourShader.setMat4("model", cubeB.getModelMatrix());
+		cubeB.draw();
 
 		// plane
 		model = glm::mat4(1.0f);
@@ -285,5 +211,5 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 	fov -= (float)yoffset;
 	if (fov < 1.0f) fov = 1.0f;
-	if (fov > 45.0f) fov = 45.0;
+	if (fov > 85.0f) fov = 85.0;
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include "PhysicsComponent.h"
 
 class Cube {
 public:
@@ -9,13 +10,11 @@ public:
 	Cube(glm::vec3 position);
 	~Cube();
 
-	void updateCube();
-	void setPosition(const glm::vec3& pos);
-	void setRotation(const glm::vec3& rot);
-	void setScale(const glm::vec3& sc);
 	const glm::mat4& getModelMatrix() const { return modelMatrix; }
 
 	void draw();
+
+	PhysicsComponent physics;
 
 private:
 	static constexpr float vertices[] = {
@@ -39,10 +38,9 @@ private:
 		4, 5, 0,   0, 5, 1 // bottom face
 	};
 
-	unsigned int VAO, VBO, EBO;
+	unsigned int VAO{ 0 }, VBO{ 0 }, EBO{0};
 
-	glm::vec3 position{ 0.0f, 0.0f, 0.0f };
-	glm::vec3 rotation{ 0.0f, 0.0f, 0.0f };
-	glm::vec3 scale{ 1.0f, 1.0f, 1.0f };
 	mutable glm::mat4 modelMatrix{ 1.0f };
+
+	void updateModelMatrix() const;
 };

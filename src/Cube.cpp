@@ -1,5 +1,5 @@
 #include "Cube.h"
-#include <glad/glad.h>
+
 
 Cube::Cube()
 {
@@ -24,9 +24,8 @@ Cube::Cube()
 	glEnableVertexAttribArray(1);
 }
 
-Cube::Cube(glm::vec3 pos) : Cube()
-{
-	position = pos;
+Cube::Cube(glm::vec3 pos) : Cube() {
+	physics.position = pos;
 }
 
 Cube::~Cube()
@@ -36,34 +35,15 @@ Cube::~Cube()
 	glDeleteBuffers(1, &EBO);
 }
 
-void Cube::updateCube()
-{
-	modelMatrix = glm::mat4(1.0f);
-	modelMatrix = glm::translate(modelMatrix, position);
-	modelMatrix = glm::rotate(modelMatrix, glm::radians(rotation.x), glm::vec3(1, 0, 0));
-	modelMatrix = glm::rotate(modelMatrix, glm::radians(rotation.y), glm::vec3(0, 1, 0));
-	modelMatrix = glm::rotate(modelMatrix, glm::radians(rotation.z), glm::vec3(0, 0, 1));
-	modelMatrix = glm::scale(modelMatrix, scale);
-}
-
-void Cube::setPosition(const glm::vec3& pos)
-{
-	position = pos;
-}
-
-void Cube::setRotation(const glm::vec3& rot)
-{
-	rotation = rot;
-}
-
-void Cube::setScale(const glm::vec3& sc)
-{
-	scale = sc;
-}
 
 void Cube::draw()
 {
-	updateCube();
+	updateModelMatrix();
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+}
+
+void Cube::updateModelMatrix() const
+{
+	modelMatrix = glm::translate(glm::mat4(1.0f), physics.position);
 }
