@@ -18,15 +18,15 @@ public:
 
 private:
 	static constexpr float vertices[] = {
-	-0.5f, -0.5f, 0.0f, 1.0f,0.0f,0.0f, // bottom left - 0
-	0.5f, -0.5f, 0.0f, 0.0f,1.0f,0.0f, // bottom right - 1
-	-0.5f, 0.5f, 0.0f, 0.0f,0.0f,1.0f, // top left - 2
-	0.5f, 0.5f, 0.0f,  1.0f,1.0f,0.0f, // top right - 3
+	-0.5f, -0.5f, 0.0f, 0.9f, 0.45f, 0.1f, // bottom left - 0
+	0.5f, -0.5f, 0.0f, 0.9f, 0.45f, 0.1f, // bottom right - 1
+	- 0.5f, 0.5f, 0.0f, 0.9f, 0.45f, 0.1f, // top left - 2
+	0.5f, 0.5f, 0.0f,  0.9f, 0.45f, 0.1f, // top right - 3
 
-	-0.5f, -0.5f, -1.0, 1.0f,0.0f,1.0f, // back bottom left - 4
-	0.5f, -0.5f, -1.0,  0.0f,1.0f,1.0f, // back bottom right - 5
-	-0.5f, 0.5f, -1.0, 0.0f,0.0f,1.0f,// back top left - 6
-	0.5f, 0.5f, -1.0, 1.0f,1.0f,0.0f, // back top right - 7
+	- 0.5f, -0.5f, -1.0, 0.9f, 0.45f, 0.1f, // back bottom left - 4
+	0.5f, -0.5f, -1.0,  0.9f, 0.45f, 0.1f, // back bottom right - 5
+	- 0.5f, 0.5f, -1.0,0.9f, 0.45f, 0.1f, // back top left - 6
+	0.5f, 0.5f, -1.0, 0.9f, 0.45f, 0.1f, // back top right - 7
 	};
 
 	static constexpr unsigned int indices[] = {
